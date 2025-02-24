@@ -519,7 +519,7 @@ func (sh *shareHandler) startVardiffThread(expectedShareRate uint, logStats bool
 		}
 		sort.Strings(statsLines)
 		stats += strings.Join(statsLines, "\n")
-		stats += "\n\n======================================================== nxl_bridge_" + version + " ===\n"
+		stats += "\n\n======================================================== htn_bridge_" + version + " ===\n"
 		stats += strings.Join(toleranceErrs, "\n")
 		if logStats {
 			log.Println(stats)
