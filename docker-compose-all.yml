@@ -1,9 +1,9 @@
 volumes:
   prometheus_data: {}
 services:
-  htn_bridge:
-    image: hoosat-oy/htn-stratum-bridge:latest
-    container_name: htn_bridge
+  htn_stratum_bridge:
+    build: .
+    container_name: htn_stratum_bridge
     restart: unless-stopped
     user: "0"
     command:
