@@ -36,7 +36,6 @@ func main() {
 		})
 	}
 
-	flag.BoolVar(&cfg.MineWhenNotSynced, "minewhennotsynced", cfg.MineWhenNotSynced, "mine when not synced")
 	flag.StringVar(&cfg.StratumPort, "stratum", cfg.StratumPort, "stratum port to listen on")
 	flag.BoolVar(&cfg.PrintStats, "stats", cfg.PrintStats, "true to show periodic stats to console")
 	flag.StringVar(&cfg.RPCServer, "hoosat_address", cfg.RPCServer, "address of the spectred node")
@@ -50,6 +49,7 @@ func main() {
 	flag.StringVar(&cfg.PromPort, "prom", cfg.PromPort, "address to serve prom stats")
 	flag.BoolVar(&cfg.UseLogFile, "log", cfg.UseLogFile, "if true will output errors to log file")
 	flag.StringVar(&cfg.HealthCheckPort, "hcp", cfg.HealthCheckPort, "(rarely used) if defined will expose a health check on /readyz")
+	flag.BoolVar(&cfg.MineWhenNotSynced, "minewhennotsynced", cfg.MineWhenNotSynced, "mine when not synced")
 	flag.Parse()
 
 	if cfg.MinShareDiff == 0 {
@@ -74,6 +74,7 @@ func main() {
 	log.Printf("\tblock wait:      %s", cfg.BlockWaitTime)
 	log.Printf("\textranonce size: %d", cfg.ExtranonceSize)
 	log.Printf("\thealth check:    %s", cfg.HealthCheckPort)
+	log.Printf("\tMine when not synced %t", cfg.MineWhenNotSynced)
 	log.Println("----------------------------------")
 
 	if err := htnstratum.ListenAndServe(cfg); err != nil {
