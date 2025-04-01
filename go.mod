@@ -3,7 +3,7 @@ module github.com/Hoosat-Oy/htn-stratum-bridge
 go 1.18
 
 require (
-	github.com/Hoosat-Oy/HTND v1.2.1
+	github.com/Hoosat-Oy/HTND v1.2.2-0.20250327113326-6fe1d62ef821
 	github.com/google/go-cmp v0.5.9
 	github.com/google/uuid v1.3.1
 	github.com/mattn/go-colorable v0.1.13
@@ -18,6 +18,7 @@ require (
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
+	github.com/chewxy/math32 v1.11.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/jrick/logrotate v1.0.0 // indirect
