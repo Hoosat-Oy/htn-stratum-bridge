@@ -36,8 +36,7 @@ func main() {
 		})
 	}
 
-	cfg.MineWhenNotSynced = false
-
+	flag.BoolVar(&cfg.MineWhenNotSynced, "minenotsynced", cfg.MineWhenNotSynced, "mine when not synced")
 	flag.StringVar(&cfg.StratumPort, "stratum", cfg.StratumPort, "stratum port to listen on")
 	flag.BoolVar(&cfg.PrintStats, "stats", cfg.PrintStats, "true to show periodic stats to console")
 	flag.StringVar(&cfg.RPCServer, "hoosat_address", cfg.RPCServer, "address of the spectred node")
