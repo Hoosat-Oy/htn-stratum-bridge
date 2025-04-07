@@ -129,6 +129,14 @@ func (sc *StratumContext) writeWithBackoff(data []byte) error {
 	return fmt.Errorf("failed writing to socket after 3 attempts")
 }
 
+func (sc *StratumContext) ReplySuccess(id any) error {
+	return sc.Reply(JsonRpcResponse{
+		Id:     id,
+		Result: true,
+		Error:  []any{21, "Job not found", nil},
+	})
+}
+
 func (sc *StratumContext) ReplyStaleShare(id any) error {
 	return sc.Reply(JsonRpcResponse{
 		Id:     id,
@@ -136,6 +144,7 @@ func (sc *StratumContext) ReplyStaleShare(id any) error {
 		Error:  []any{21, "Job not found", nil},
 	})
 }
+
 func (sc *StratumContext) ReplyDupeShare(id any) error {
 	return sc.Reply(JsonRpcResponse{
 		Id:     id,
@@ -153,7 +162,7 @@ func (sc *StratumContext) ReplyBadShare(id any) error {
 }
 
 func (sc *StratumContext) ReplyIncorrectPow(id any, recalculated string, submitted string) error {
-	fmt.Printf("Incorrect proof of work %s %s:", recalculated, submitted)
+	fmt.Printf("Incorrect proof of work submitted %s, recalculated %s\n", submitted, recalculated)
 	return sc.Reply(JsonRpcResponse{
 		Id:     id,
 		Result: nil,

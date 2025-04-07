@@ -348,6 +348,7 @@ func (sh *shareHandler) submit(ctx *gostratum.StratumContext,
 	// :)
 	ctx.Logger.Info(fmt.Sprintf("block accepted %s", blockhash))
 	stats := sh.getCreateStats(ctx)
+	ctx.ReplySuccess(eventId)
 	stats.BlocksFound.Add(1)
 	sh.overall.BlocksFound.Add(1)
 	RecordBlockFound(ctx, block.Header.Nonce(), block.Header.BlueScore(), blockhash.String())
