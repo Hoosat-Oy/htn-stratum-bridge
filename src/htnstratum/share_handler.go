@@ -261,6 +261,11 @@ func (sh *shareHandler) HandleSubmit(ctx *gostratum.StratumContext, event gostra
 		return ctx.ReplyBadShare(event.Id)
 	}
 
+	// jsonHeader, err := json.MarshalIndent(submitInfo.block, "", "\t")
+	// if err != nil {
+	// 	return fmt.Errorf("failed to marshal submitted block: %+v", err)
+	// }
+	// fmt.Printf("Block: %s\n", jsonHeader)
 	converted, err := appmessage.RPCBlockToDomainBlock(submitInfo.block, submitInfo.powHash.String())
 	if err != nil {
 		return fmt.Errorf("failed to cast block to mutable block: %+v", err)
@@ -268,6 +273,8 @@ func (sh *shareHandler) HandleSubmit(ctx *gostratum.StratumContext, event gostra
 	mutableHeader := converted.Header.ToMutable()
 	mutableHeader.SetNonce(submitInfo.nonceVal)
 	powState := pow.NewState(mutableHeader)
+	// fmt.Printf("Block version: %d\n", powState.BlockVersion)
+	// fmt.Printf("Block prevHeader: %s\n", powState.PrevHeader.String())
 	recalculatedPowNum, recalculatedPowHash := powState.CalculateProofOfWorkValue()
 	submittedPowNum := toBig(submitInfo.powHash)
 
@@ -275,28 +282,32 @@ func (sh *shareHandler) HandleSubmit(ctx *gostratum.StratumContext, event gostra
 	//fmt.Printf("%s\r\n", submittedPowNum)
 	//fmt.Printf("%s\r\n", recalculatedPowNum)
 	if submittedPowNum.Cmp(recalculatedPowNum) == 0 {
-		if submittedPowNum.Cmp(&powState.Target) <= 0 {
+		if recalculatedPowNum.Cmp(&powState.Target) <= 0 {
 			if err := sh.submit(ctx, converted, submitInfo.powHash, submitInfo.nonceVal, event.Id); err != nil {
 				return err
 			}
-		} else if submittedPowNum.Cmp(state.stratumDiff.targetValue) >= 0 {
+		} else if recalculatedPowNum.Cmp(state.stratumDiff.targetValue) >= 0 {
 			if soloMining {
 				ctx.Logger.Warn("weak block")
 			} else {
 				ctx.Logger.Warn("weak share")
 			}
-			// ctx.Logger.Warn(fmt.Sprintf("Net Target: %s\n", powState.Target.String()))
-			// ctx.Logger.Warn(fmt.Sprintf("Stratum Target: %s\n", state.stratumDiff.targetValue.String()))
-			// ctx.Logger.Warn(fmt.Sprintf("Stratum Target Hex: %064x\n", state.stratumDiff.targetValue.Bytes()))
-			// ctx.Logger.Warn(fmt.Sprintf("Nonce: %d\n", submitInfo.nonceVal))
-			// ctx.Logger.Warn(fmt.Sprintf("Nonce Hex: %016x\n", submitInfo.nonceVal))
-			// ctx.Logger.Warn(fmt.Sprintf("powNum: %064x\n", powNum.Bytes()))
+			// fmt.Printf("Nonce: \t\t\t\t%d\n", submitInfo.nonceVal)
+			// fmt.Printf("Nonce Hex: \t\t\t%016x\n", submitInfo.nonceVal)
+			// fmt.Printf("Net Target (Hex): \t\t%064x\n", powState.Target.Bytes())
+			// fmt.Printf("Stratum Target (Hex): \t\t%064x\n", state.stratumDiff.targetValue.Bytes())
+			// fmt.Printf("Net Target: \t\t\t%s\n", powState.Target.String())
+			// fmt.Printf("Stratum Target: \t\t%s\n", state.stratumDiff.targetValue.String())
+			// fmt.Printf("Submitted PoW num: \t\t%d\n", submittedPowNum)
+			// fmt.Printf("Recalculated PoW num: \t\t%d\n", recalculatedPowNum)
+			// fmt.Printf("Lowdiff share, PoW Hash submitted %s, recalculated %s\n", submitInfo.powHash.String(), recalculatedPowHash.String())
 			stats.InvalidShares.Add(1)
 			sh.overall.InvalidShares.Add(1)
 			RecordWeakShare(ctx)
 			return ctx.ReplyLowDiffShare(event.Id)
 		}
 	} else {
+		fmt.Printf("Incorrect proof of work hash submitted %s, recalculated %s\n", submitInfo.powHash.String(), recalculatedPowHash.String())
 		stats.InvalidShares.Add(1)
 		sh.overall.InvalidShares.Add(1)
 		return ctx.ReplyIncorrectPow(event.Id, recalculatedPowHash.String(), submitInfo.powHash.String())
