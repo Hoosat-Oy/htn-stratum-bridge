@@ -121,6 +121,7 @@ func (sh *shareHandler) getCreateStats(ctx *gostratum.StratumContext) *WorkStats
 }
 
 type submitInfo struct {
+	jobId    int64
 	block    *appmessage.RPCBlock
 	state    *MiningState
 	noncestr string
@@ -177,6 +178,7 @@ func validateSubmit(ctx *gostratum.StratumContext, event gostratum.JsonRpcEvent)
 	}
 
 	return &submitInfo{
+		jobId:    jobId,
 		state:    state,
 		block:    block,
 		noncestr: strings.Replace(noncestr, "0x", "", 1),
@@ -214,7 +216,7 @@ func (sh *shareHandler) setSoloDiff(diff float64) {
 func (sh *shareHandler) HandleSubmit(ctx *gostratum.StratumContext, event gostratum.JsonRpcEvent, soloMining bool) error {
 	submitInfo, err := validateSubmit(ctx, event)
 	if err != nil {
-		return err
+		return ctx.ReplyBadShare(event.Id)
 	}
 
 	// add extranonce to noncestr if enabled and submitted nonce is shorter than
@@ -243,6 +245,9 @@ func (sh *shareHandler) HandleSubmit(ctx *gostratum.StratumContext, event gostra
 	}
 	stats := sh.getCreateStats(ctx)
 	if err := sh.checkStales(ctx, submitInfo); err != nil {
+		// remove job since it is bad job, so the job won't be reused for submit.
+		state := GetMiningState(ctx)
+		state.RemoveJob(int(submitInfo.jobId))
 		if err == ErrDupeShare {
 			ctx.Logger.Warn("duplicate share: " + submitInfo.noncestr)
 			RecordDupeShare(ctx)
@@ -283,7 +288,7 @@ func (sh *shareHandler) HandleSubmit(ctx *gostratum.StratumContext, event gostra
 	//fmt.Printf("%s\r\n", recalculatedPowNum)
 	if submittedPowNum.Cmp(recalculatedPowNum) == 0 {
 		if recalculatedPowNum.Cmp(&powState.Target) <= 0 {
-			if err := sh.submit(ctx, converted, submitInfo.powHash, submitInfo.nonceVal, event.Id); err != nil {
+			if err := sh.submit(ctx, converted, submitInfo, event.Id); err != nil {
 				return err
 			}
 		} else if recalculatedPowNum.Cmp(state.stratumDiff.targetValue) >= 0 {
@@ -326,22 +331,23 @@ func (sh *shareHandler) HandleSubmit(ctx *gostratum.StratumContext, event gostra
 }
 
 func (sh *shareHandler) submit(ctx *gostratum.StratumContext,
-	block *externalapi.DomainBlock, powHash *externalapi.DomainHash, nonce uint64, eventId any) error {
+	block *externalapi.DomainBlock, submitInfo *submitInfo, eventId any) error {
 	mutable := block.Header.ToMutable()
-	mutable.SetNonce(nonce)
+	mutable.SetNonce(submitInfo.nonceVal)
 	block = &externalapi.DomainBlock{
 		Header:       mutable.ToImmutable(),
 		Transactions: block.Transactions,
 	}
-	_, err := sh.hoosat.SubmitBlock(block, powHash.String())
+	_, err := sh.hoosat.SubmitBlock(block, submitInfo.powHash.String())
 	blockhash := consensushashing.BlockHash(block)
 	// print after the submit to get it submitted faster
-	ctx.Logger.Info(fmt.Sprintf("Submitted block with powhash: %s ", powHash))
+	// ctx.Logger.Info(fmt.Sprintf("Submitted block with powhash: %s ", powHash))
 
 	if err != nil {
 		// :'(
 		if strings.Contains(err.Error(), "ErrDuplicateBlock") {
 			ctx.Logger.Warn("block rejected, stale")
+
 			// stale
 			sh.getCreateStats(ctx).StaleShares.Add(1)
 			sh.overall.StaleShares.Add(1)
@@ -357,7 +363,7 @@ func (sh *shareHandler) submit(ctx *gostratum.StratumContext,
 	}
 
 	// :)
-	ctx.Logger.Info(fmt.Sprintf("block accepted %s", blockhash))
+	// ctx.Logger.Info(fmt.Sprintf("block accepted %s", blockhash))
 	stats := sh.getCreateStats(ctx)
 	ctx.ReplySuccess(eventId)
 	stats.BlocksFound.Add(1)

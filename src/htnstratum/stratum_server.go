@@ -2,6 +2,7 @@ package htnstratum
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -96,7 +97,7 @@ func ListenAndServe(cfg BridgeConfig) error {
 	handlers[string(gostratum.StratumMethodSubmit)] =
 		func(ctx *gostratum.StratumContext, event gostratum.JsonRpcEvent) error {
 			if err := shareHandler.HandleSubmit(ctx, event, cfg.SoloMining); err != nil {
-				ctx.Logger.Sugar().Error(err) // sink error
+				fmt.Printf("Error handling submit: %s", err)
 			}
 			return nil
 		}

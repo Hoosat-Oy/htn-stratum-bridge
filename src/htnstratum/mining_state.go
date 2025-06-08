@@ -49,3 +49,9 @@ func (ms *MiningState) GetJob(id int) (*appmessage.RPCBlock, bool) {
 	ms.JobLock.Unlock()
 	return job, exists
 }
+
+func (ms *MiningState) RemoveJob(id int) {
+	ms.JobLock.Lock()
+	delete(ms.Jobs, id%maxjobs)
+	ms.JobLock.Unlock()
+}
