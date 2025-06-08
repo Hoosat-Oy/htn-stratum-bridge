@@ -345,10 +345,10 @@ func (sh *shareHandler) submit(ctx *gostratum.StratumContext,
 
 	if err != nil {
 		// :'(
+		state := GetMiningState(ctx)
+		state.RemoveJob(int(submitInfo.jobId))
 		if strings.Contains(err.Error(), "ErrDuplicateBlock") {
 			ctx.Logger.Warn("block rejected, stale")
-
-			// stale
 			sh.getCreateStats(ctx).StaleShares.Add(1)
 			sh.overall.StaleShares.Add(1)
 			RecordStaleShare(ctx)
