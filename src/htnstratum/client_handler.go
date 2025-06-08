@@ -85,6 +85,10 @@ func (c *clientListener) OnDisconnect(ctx *gostratum.StratumContext) {
 
 func (c *clientListener) NewBlockAvailable(htnApi *HtnApi, soloMining bool) {
 	c.clientLock.Lock()
+	for _, client := range c.clients {
+		state := GetMiningState(client)
+		state.stale = false
+	}
 	addresses := make([]string, 0, len(c.clients))
 	for _, cl := range c.clients {
 		if !cl.Connected() {
@@ -207,7 +211,7 @@ func sendClientDiff(client *gostratum.StratumContext, state *MiningState) {
 		Params:  []any{state.stratumDiff.diffValue},
 	}); err != nil {
 		RecordWorkerError(client.WalletAddr, ErrFailedSetDiff)
-		client.Logger.Error(errors.Wrap(err, "failed sending difficulty").Error(), zap.Any("context", client))
+		client.Logger.Error(errors.Wrap(err, "failed sending difficulty").Error())
 		return
 	}
 }

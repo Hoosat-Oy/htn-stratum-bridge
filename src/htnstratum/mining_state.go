@@ -20,6 +20,7 @@ type MiningState struct {
 	useBigJob   bool
 	connectTime time.Time
 	stratumDiff *hoosatDiff
+	stale       bool
 }
 
 func MiningStateGenerator() any {
@@ -53,5 +54,11 @@ func (ms *MiningState) GetJob(id int) (*appmessage.RPCBlock, bool) {
 func (ms *MiningState) RemoveJob(id int) {
 	ms.JobLock.Lock()
 	delete(ms.Jobs, id%maxjobs)
+	ms.JobLock.Unlock()
+}
+
+func (ms *MiningState) ClearJobs() {
+	ms.JobLock.Lock()
+	ms.Jobs = make(map[int]*appmessage.RPCBlock)
 	ms.JobLock.Unlock()
 }

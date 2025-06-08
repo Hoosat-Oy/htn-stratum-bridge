@@ -199,13 +199,12 @@ func (sh *shareHandler) checkStales(ctx *gostratum.StratumContext, si *submitInf
 	tip := sh.tipBlueScore
 	if si.block.Header.BlueScore > tip {
 		sh.tipBlueScore = si.block.Header.BlueScore
-		return nil // can't be
+		return nil // can't be stale
 	}
 	if tip-si.block.Header.BlueScore > workWindow {
 		RecordStaleShare(ctx)
 		return errors.Wrapf(ErrStaleShare, "blueScore %d vs %d", si.block.Header.BlueScore, tip)
 	}
-	// TODO (bs): dupe share tracking
 	return nil
 }
 
@@ -214,6 +213,10 @@ func (sh *shareHandler) setSoloDiff(diff float64) {
 }
 
 func (sh *shareHandler) HandleSubmit(ctx *gostratum.StratumContext, event gostratum.JsonRpcEvent, soloMining bool) error {
+	state := GetMiningState(ctx)
+	if state.stale {
+		return ctx.ReplyStaleShare(event.Id)
+	}
 	submitInfo, err := validateSubmit(ctx, event)
 	if err != nil {
 		return ctx.ReplyBadShare(event.Id)
@@ -229,7 +232,6 @@ func (sh *shareHandler) HandleSubmit(ctx *gostratum.StratumContext, event gostra
 	}
 
 	//ctx.Logger.Debug(submitInfo.block.Header.BlueScore, " submit ", submitInfo.noncestr)
-	state := GetMiningState(ctx)
 	if state.useBigJob {
 		submitInfo.nonceVal, err = strconv.ParseUint(submitInfo.noncestr, 16, 64)
 		if err != nil {
@@ -247,15 +249,14 @@ func (sh *shareHandler) HandleSubmit(ctx *gostratum.StratumContext, event gostra
 	if err := sh.checkStales(ctx, submitInfo); err != nil {
 		// remove job since it is bad job, so the job won't be reused for submit.
 		state := GetMiningState(ctx)
-		state.RemoveJob(int(submitInfo.jobId))
+		state.stale = true
+		state.ClearJobs()
 		if err == ErrDupeShare {
-			ctx.Logger.Warn("duplicate share: " + submitInfo.noncestr)
 			RecordDupeShare(ctx)
 			stats.InvalidShares.Add(1)
 			sh.overall.InvalidShares.Add(1)
 			return ctx.ReplyDupeShare(event.Id)
 		} else if errors.Is(err, ErrStaleShare) {
-			ctx.Logger.Warn("stale share")
 			stats.StaleShares.Add(1)
 			sh.overall.StaleShares.Add(1)
 			RecordStaleShare(ctx)
@@ -338,6 +339,7 @@ func (sh *shareHandler) submit(ctx *gostratum.StratumContext,
 		Header:       mutable.ToImmutable(),
 		Transactions: block.Transactions,
 	}
+	state := GetMiningState(ctx)
 	_, err := sh.hoosat.SubmitBlock(block, submitInfo.powHash.String())
 	blockhash := consensushashing.BlockHash(block)
 	// print after the submit to get it submitted faster
@@ -345,8 +347,8 @@ func (sh *shareHandler) submit(ctx *gostratum.StratumContext,
 
 	if err != nil {
 		// :'(
-		state := GetMiningState(ctx)
-		state.RemoveJob(int(submitInfo.jobId))
+		state.stale = true
+		state.ClearJobs()
 		if strings.Contains(err.Error(), "ErrDuplicateBlock") {
 			ctx.Logger.Warn("block rejected, stale")
 			sh.getCreateStats(ctx).StaleShares.Add(1)
@@ -365,6 +367,7 @@ func (sh *shareHandler) submit(ctx *gostratum.StratumContext,
 	// :)
 	// ctx.Logger.Info(fmt.Sprintf("block accepted %s", blockhash))
 	stats := sh.getCreateStats(ctx)
+	state.RemoveJob(int(submitInfo.jobId))
 	ctx.ReplySuccess(eventId)
 	stats.BlocksFound.Add(1)
 	sh.overall.BlocksFound.Add(1)
