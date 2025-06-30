@@ -246,8 +246,7 @@ func (sh *shareHandler) HandleSubmit(ctx *gostratum.StratumContext, event gostra
 	if err := sh.checkStales(ctx, submitInfo); err != nil {
 		// remove job since it is bad job, so the job won't be reused for submit.
 		state := GetMiningState(ctx)
-		state.stale = true
-		state.ClearJobs()
+		state.RemoveJob(int(submitInfo.jobId))
 		if err == ErrDupeShare {
 			RecordDupeShare(ctx)
 			stats.InvalidShares.Add(1)

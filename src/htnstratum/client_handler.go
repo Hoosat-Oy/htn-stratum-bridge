@@ -85,10 +85,6 @@ func (c *clientListener) OnDisconnect(ctx *gostratum.StratumContext) {
 
 func (c *clientListener) NewBlockAvailable(htnApi *HtnApi, soloMining bool) {
 	c.clientLock.Lock()
-	for _, client := range c.clients {
-		state := GetMiningState(client)
-		state.stale = false
-	}
 	addresses := make([]string, 0, len(c.clients))
 	for _, cl := range c.clients {
 		if !cl.Connected() {
