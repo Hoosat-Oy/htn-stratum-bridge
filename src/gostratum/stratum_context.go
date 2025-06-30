@@ -133,7 +133,7 @@ func (sc *StratumContext) ReplySuccess(id any) error {
 	return sc.Reply(JsonRpcResponse{
 		Id:     id,
 		Result: true,
-		Error:  []any{19, "Success", nil},
+		Error:  nil,
 	})
 }
 
