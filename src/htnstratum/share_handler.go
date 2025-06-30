@@ -214,9 +214,6 @@ func (sh *shareHandler) setSoloDiff(diff float64) {
 
 func (sh *shareHandler) HandleSubmit(ctx *gostratum.StratumContext, event gostratum.JsonRpcEvent, soloMining bool) error {
 	state := GetMiningState(ctx)
-	if state.stale {
-		return ctx.ReplyStaleShare(event.Id)
-	}
 	submitInfo, err := validateSubmit(ctx, event)
 	if err != nil {
 		return ctx.ReplyBadShare(event.Id)
@@ -325,10 +322,7 @@ func (sh *shareHandler) HandleSubmit(ctx *gostratum.StratumContext, event gostra
 	sh.overall.SharesFound.Add(1)
 	RecordShareFound(ctx, state.stratumDiff.hashValue)
 
-	return ctx.Reply(gostratum.JsonRpcResponse{
-		Id:     event.Id,
-		Result: true,
-	})
+	return nil
 }
 
 func (sh *shareHandler) submit(ctx *gostratum.StratumContext,
@@ -347,8 +341,7 @@ func (sh *shareHandler) submit(ctx *gostratum.StratumContext,
 
 	if err != nil {
 		// :'(
-		state.stale = true
-		state.ClearJobs()
+		state.RemoveJob(int(submitInfo.jobId))
 		if strings.Contains(err.Error(), "ErrDuplicateBlock") {
 			ctx.Logger.Warn("block rejected, stale")
 			sh.getCreateStats(ctx).StaleShares.Add(1)
