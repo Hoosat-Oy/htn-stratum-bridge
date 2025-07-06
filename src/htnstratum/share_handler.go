@@ -99,9 +99,11 @@ func (sh *shareHandler) getCreateStats(ctx *gostratum.StratumContext) *WorkStats
 		if found {
 			// no worker name, but remote addr is there
 			// so replacet the remote addr with the worker names
-			delete(sh.stats, ctx.RemoteAddr)
-			stats.WorkerName = ctx.WorkerName
-			sh.stats[ctx.WorkerName] = stats
+			if ctx.WorkerName != "" {
+				delete(sh.stats, ctx.RemoteAddr)
+				stats.WorkerName = ctx.WorkerName
+				sh.stats[ctx.WorkerName] = stats
+			}
 		}
 	}
 	if !found { // legit doesn't exist, create it
@@ -383,9 +385,6 @@ func (sh *shareHandler) startStatsThread() error {
 		totalRate := float64(0)
 		for _, v := range sh.stats {
 			rate := GetAverageHashrateGHs(v)
-			if v.WorkerName == "" && rate == 0 {
-				continue
-			}
 			totalRate += rate
 			rateStr := stringifyHashrate(rate)
 			ratioStr := fmt.Sprintf("%d/%d/%d", v.SharesFound.Load(), v.StaleShares.Load(), v.InvalidShares.Load())
