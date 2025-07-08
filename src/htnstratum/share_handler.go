@@ -56,6 +56,8 @@ type BanInfo struct {
 
 var bans = []BanInfo{}
 
+const bps = 10
+
 func AddressBanned(address string) bool {
 	for _, ban := range bans {
 		if ban.Address == address {
@@ -399,7 +401,7 @@ func (sh *shareHandler) startStatsThread() error {
 		str += fmt.Sprintf("                | %14.14s | %14.14s | %12d | %11s",
 			rateStr, ratioStr, sh.overall.BlocksFound.Load(), time.Since(start).Round(time.Second))
 		str += "\n-------------------------------------------------------------------------------\n"
-		str += " Est. Network Hashrate: " + stringifyHashrate(DiffToHash(sh.soloDiff))
+		str += " Est. Network Hashrate: " + stringifyHashrate(DiffToHash(sh.soloDiff)*bps)
 		str += "\n========================================================== htn_bridge_" + version + " ===\n"
 		sh.statsLock.Unlock()
 		log.Println(str)
