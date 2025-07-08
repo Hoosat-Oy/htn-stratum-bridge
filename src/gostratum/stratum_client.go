@@ -48,7 +48,7 @@ func readFromConnection(connection net.Conn, cb LineCallback) error {
 		return err
 	}
 
-	buffer := make([]byte, 8096)
+	buffer := make([]byte, 8096*2)
 	_, err := connection.Read(buffer)
 	if err != nil {
 		return errors.Wrapf(err, "error reading from connection")
