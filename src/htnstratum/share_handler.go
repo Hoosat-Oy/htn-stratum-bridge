@@ -42,6 +42,7 @@ type WorkStats struct {
 
 type shareHandler struct {
 	hoosat       *rpcclient.RPCClient
+	state        *MiningState
 	soloDiff     float64
 	stats        map[string]*WorkStats
 	statsLock    sync.Mutex
@@ -56,7 +57,7 @@ type BanInfo struct {
 
 var bans = []BanInfo{}
 
-const bps = 10
+const bps = 5
 
 func AddressBanned(address string) bool {
 	for _, ban := range bans {
@@ -401,7 +402,8 @@ func (sh *shareHandler) startStatsThread() error {
 		str += fmt.Sprintf("                | %14.14s | %14.14s | %12d | %11s",
 			rateStr, ratioStr, sh.overall.BlocksFound.Load(), time.Since(start).Round(time.Second))
 		str += "\n-------------------------------------------------------------------------------\n"
-		str += " Est. Network Hashrate: " + stringifyHashrate(DiffToHash(sh.soloDiff)*bps)
+		str += " Est. Network Hashrate: " + stringifyHashrate(DiffToHash(sh.soloDiff)*bps) + "\n"
+		str += " Mining difficulty:     " + fmt.Sprintf("%f", sh.soloDiff)
 		str += "\n========================================================== htn_bridge_" + version + " ===\n"
 		sh.statsLock.Unlock()
 		log.Println(str)
@@ -431,11 +433,11 @@ func stringifyHashrate(ghs float64) string {
 		unit = unitStrings[3]
 	} else {
 		for i, u := range unitStrings[4:] {
-			hr = ghs / (1000 * float64(i+1))
+			hr = ghs / (float64(i) * 1000)
 			if hr < 1000 {
-				unit = u
 				break
 			}
+			unit = u
 		}
 	}
 
