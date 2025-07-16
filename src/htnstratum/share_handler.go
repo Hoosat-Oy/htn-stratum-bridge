@@ -23,7 +23,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const varDiffThreadSleep = 10
+const varDiffThreadSleep = 5
 
 type WorkStats struct {
 	BlocksFound        atomic.Int64
