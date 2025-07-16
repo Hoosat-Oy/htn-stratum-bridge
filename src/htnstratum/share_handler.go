@@ -431,15 +431,18 @@ func stringifyHashrate(ghs float64) string {
 		unit = unitStrings[3]
 	} else {
 		for i, u := range unitStrings[4:] {
-			hr = ghs / (float64(i) * 1000)
+			hr = ghs / (1000 * float64(i+1))
 			if hr < 1000 {
+				unit = u
 				break
 			}
-			unit = u
 		}
 	}
 
-	return fmt.Sprintf("%0.2f%sH/s", hr, unit)
+	formatted := fmt.Sprintf("%0.2f", hr)
+	formatted = strings.Replace(formatted, ".", ",", 1)
+
+	return fmt.Sprintf("%s%sH/s", formatted, unit)
 }
 
 func (sh *shareHandler) startVardiffThread(expectedShareRate uint, logStats bool) error {
