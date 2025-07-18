@@ -131,7 +131,11 @@ func CleanWallet(in string) (string, error) {
 
 	// Validate and extract correct address format
 	if walletRegex.MatchString(in) {
-		return in[0:61], nil
+		if len(in) >= 61 {
+			return in[0:61], nil
+		} else {
+			return "", errors.New("unable to coerce wallet to valid hoosat or hoosattest address")
+		}
 	}
 	return "", errors.New("unable to coerce wallet to valid hoosat or hoosattest address")
 }
