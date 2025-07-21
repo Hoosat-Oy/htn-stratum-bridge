@@ -5,7 +5,7 @@ stratum_port: :5555
 # hoosat_address: address/port of the rpc server for hoosat, typically 13110
 # For a list of public nodes, run `nslookup mainnet-dnsseed.daglabs-dev.com`
 # uncomment for to use a public node
-hoosat_address: localhost:42422
+hoosat_address: localhost:42420
 solo: true
 
 # min_share_diff: only accept shares of the specified difficulty (or higher) from
