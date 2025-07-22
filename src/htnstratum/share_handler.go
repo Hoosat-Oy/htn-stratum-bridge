@@ -314,7 +314,7 @@ func (sh *shareHandler) HandleSubmit(ctx *gostratum.StratumContext, event gostra
 			return ctx.ReplyLowDiffShare(event.Id)
 		}
 	} else {
-		fmt.Printf("Incorrect proof of work hash submitted %s, recalculated %s\n", submitInfo.powHash.String(), recalculatedPowHash.String())
+		// fmt.Printf("Incorrect proof of work hash submitted %s, recalculated %s\n", submitInfo.powHash.String(), recalculatedPowHash.String())
 		stats.InvalidShares.Add(1)
 		sh.overall.InvalidShares.Add(1)
 		return ctx.ReplyIncorrectPow(event.Id, recalculatedPowHash.String(), submitInfo.powHash.String())
