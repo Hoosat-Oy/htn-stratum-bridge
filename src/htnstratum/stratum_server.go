@@ -15,7 +15,7 @@ import (
 )
 
 const version = "v1.3.1"
-const minBlockWaitTime = 500 * time.Millisecond
+const minBlockWaitTime = 200 * time.Millisecond
 
 type BridgeConfig struct {
 	StratumPort       string        `yaml:"stratum_port"`

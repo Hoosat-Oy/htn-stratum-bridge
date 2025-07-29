@@ -12,7 +12,7 @@ hoosat_address: localhost:42420
 # reducing network traffic and server load, while lower values will increase the
 # number of shares submitted, thereby reducing the amount of time needed for
 # accurate hashrate measurements
-min_share_diff: 4
+min_share_diff: 0.0001
 
 # block_wait_time: time to wait since last new block message from hoosat before
 # manually requesting a new block
