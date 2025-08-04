@@ -398,7 +398,7 @@ func (sh *shareHandler) startStatsThread() error {
 		}
 		sort.Strings(lines)
 		str += strings.Join(lines, "\n")
-		rateStr := stringifyHashrate(totalRate)
+		rateStr := stringifyHashrate(totalRate * bps)
 		ratioStr := fmt.Sprintf("%d/%d/%d", sh.overall.SharesFound.Load(), sh.overall.StaleShares.Load(), sh.overall.InvalidShares.Load())
 		str += "\n-------------------------------------------------------------------------------\n"
 		str += fmt.Sprintf("                | %14.14s | %14.14s | %12d | %11s",
