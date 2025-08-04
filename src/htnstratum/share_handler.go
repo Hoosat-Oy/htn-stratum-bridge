@@ -228,12 +228,12 @@ func (sh *shareHandler) HandleSubmit(ctx *gostratum.StratumContext, event gostra
 	// I've been idiot for not commenting this gem out.
 	// add extranonce to noncestr if enabled and submitted nonce is shorter than
 	// expected (16 - <extranonce length> characters)
-	// if ctx.Extranonce != "" {
-	// 	extranonce2Len := 16 - len(ctx.Extranonce)
-	// 	if len(submitInfo.noncestr) <= extranonce2Len {
-	// 		submitInfo.noncestr = ctx.Extranonce + fmt.Sprintf("%0*s", extranonce2Len, submitInfo.noncestr)
-	// 	}
-	// }
+	if ctx.Extranonce != "" {
+		extranonce2Len := 16 - len(ctx.Extranonce)
+		if len(submitInfo.noncestr) <= extranonce2Len {
+			submitInfo.noncestr = ctx.Extranonce + fmt.Sprintf("%0*s", extranonce2Len, submitInfo.noncestr)
+		}
+	}
 
 	//ctx.Logger.Debug(submitInfo.block.Header.BlueScore, " submit ", submitInfo.noncestr)
 	if state.useBigJob {
@@ -391,7 +391,7 @@ func (sh *shareHandler) startStatsThread() error {
 		for _, v := range sh.stats {
 			rate := GetAverageHashrateGHs(v)
 			totalRate += rate
-			rateStr := stringifyHashrate(rate)
+			rateStr := stringifyHashrate(rate * bps)
 			ratioStr := fmt.Sprintf("%d/%d/%d", v.SharesFound.Load(), v.StaleShares.Load(), v.InvalidShares.Load())
 			lines = append(lines, fmt.Sprintf(" %-15s| %14.14s | %14.14s | %12d | %11s",
 				v.WorkerName, rateStr, ratioStr, v.BlocksFound.Load(), time.Since(v.StartTime).Round(time.Second)))
