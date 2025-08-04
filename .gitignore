@@ -31,4 +31,5 @@ cmd/htnbridge/htnbridge.exe
 cmd/htnbridge/bridge.log
 cmd/htnbridge/config.yaml
 cmd/htnbridge/htnbridge-*
+cmd/htnbridge/HTN-Stratum-Bridge*
 release/
