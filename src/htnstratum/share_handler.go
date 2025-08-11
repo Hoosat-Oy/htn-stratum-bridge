@@ -391,14 +391,14 @@ func (sh *shareHandler) startStatsThread() error {
 		for _, v := range sh.stats {
 			rate := GetAverageHashrateGHs(v)
 			totalRate += rate
-			rateStr := stringifyHashrate(rate * bps)
+			rateStr := stringifyHashrate(rate)
 			ratioStr := fmt.Sprintf("%d/%d/%d", v.SharesFound.Load(), v.StaleShares.Load(), v.InvalidShares.Load())
 			lines = append(lines, fmt.Sprintf(" %-15s| %14.14s | %14.14s | %12d | %11s",
 				v.WorkerName, rateStr, ratioStr, v.BlocksFound.Load(), time.Since(v.StartTime).Round(time.Second)))
 		}
 		sort.Strings(lines)
 		str += strings.Join(lines, "\n")
-		rateStr := stringifyHashrate(totalRate * bps)
+		rateStr := stringifyHashrate(totalRate)
 		ratioStr := fmt.Sprintf("%d/%d/%d", sh.overall.SharesFound.Load(), sh.overall.StaleShares.Load(), sh.overall.InvalidShares.Load())
 		str += "\n-------------------------------------------------------------------------------\n"
 		str += fmt.Sprintf("                | %14.14s | %14.14s | %12d | %11s",
