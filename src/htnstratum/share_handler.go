@@ -228,12 +228,12 @@ func (sh *shareHandler) HandleSubmit(ctx *gostratum.StratumContext, event gostra
 	// I've been idiot for not commenting this gem out.
 	// add extranonce to noncestr if enabled and submitted nonce is shorter than
 	// expected (16 - <extranonce length> characters)
-	if ctx.Extranonce != "" {
-		extranonce2Len := 16 - len(ctx.Extranonce)
-		if len(submitInfo.noncestr) <= extranonce2Len {
-			submitInfo.noncestr = ctx.Extranonce + fmt.Sprintf("%0*s", extranonce2Len, submitInfo.noncestr)
-		}
-	}
+	// if ctx.Extranonce != "" {
+	// 	extranonce2Len := 16 - len(ctx.Extranonce)
+	// 	if len(submitInfo.noncestr) <= extranonce2Len {
+	// 		submitInfo.noncestr = ctx.Extranonce + fmt.Sprintf("%0*s", extranonce2Len, submitInfo.noncestr)
+	// 	}
+	// }
 
 	//ctx.Logger.Debug(submitInfo.block.Header.BlueScore, " submit ", submitInfo.noncestr)
 	if state.useBigJob {
