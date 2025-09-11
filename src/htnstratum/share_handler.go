@@ -221,7 +221,7 @@ func (sh *shareHandler) HandleSubmit(ctx *gostratum.StratumContext, event gostra
 	state := GetMiningState(ctx)
 	submitInfo, err := validateSubmit(ctx, event)
 	if err != nil {
-		return ctx.ReplyBadShare(event.Id)
+		return ctx.ReplyIncorrectData(event.Id)
 	}
 
 	// I have to ask why rdugan and brandon are modifying the miners nonce after submission.
@@ -254,12 +254,7 @@ func (sh *shareHandler) HandleSubmit(ctx *gostratum.StratumContext, event gostra
 		// remove job since it is bad job, so the job won't be reused for submit.
 		state := GetMiningState(ctx)
 		state.RemoveJob(int(submitInfo.jobId))
-		if err == ErrDupeShare {
-			RecordDupeShare(ctx)
-			stats.InvalidShares.Add(1)
-			sh.overall.InvalidShares.Add(1)
-			return ctx.ReplyDupeShare(event.Id)
-		} else if errors.Is(err, ErrStaleShare) {
+		if errors.Is(err, ErrStaleShare) {
 			stats.StaleShares.Add(1)
 			sh.overall.StaleShares.Add(1)
 			RecordStaleShare(ctx)
@@ -267,6 +262,7 @@ func (sh *shareHandler) HandleSubmit(ctx *gostratum.StratumContext, event gostra
 		}
 		// unknown error somehow
 		ctx.Logger.Error("unknown error during check stales")
+		RecordInvalidShare(ctx)
 		return ctx.ReplyBadShare(event.Id)
 	}
 
@@ -277,14 +273,15 @@ func (sh *shareHandler) HandleSubmit(ctx *gostratum.StratumContext, event gostra
 	// fmt.Printf("Block: %s\n", jsonHeader)
 	converted, err := appmessage.RPCBlockToDomainBlock(submitInfo.block, submitInfo.powHash.String())
 	if err != nil {
-		return fmt.Errorf("failed to cast block to mutable block: %+v", err)
+		RecordInvalidShare(ctx)
+		return ctx.ReplyIncorrectData(event.Id)
 	}
 	mutableHeader := converted.Header.ToMutable()
 	mutableHeader.SetNonce(submitInfo.nonceVal)
 	powState := pow.NewState(mutableHeader)
 	// fmt.Printf("Block version: %d\n", powState.BlockVersion)
 	// fmt.Printf("Block prevHeader: %s\n", powState.PrevHeader.String())
-	recalculatedPowNum, recalculatedPowHash := powState.CalculateProofOfWorkValue()
+	recalculatedPowNum, _ := powState.CalculateProofOfWorkValue()
 	submittedPowNum := toBig(submitInfo.powHash)
 
 	// The block hash must be less or equal than the claimed target.
@@ -293,7 +290,25 @@ func (sh *shareHandler) HandleSubmit(ctx *gostratum.StratumContext, event gostra
 	if submittedPowNum.Cmp(recalculatedPowNum) == 0 {
 		if recalculatedPowNum.Cmp(&powState.Target) <= 0 {
 			if err := sh.submit(ctx, converted, submitInfo, event.Id); err != nil {
-				return err
+				if strings.Contains(err.Error(), "ErrDuplicateBlock") {
+					ctx.Logger.Warn("block rejected, duplicate")
+					stats.StaleShares.Add(1)
+					sh.overall.StaleShares.Add(1)
+					RecordDupeShare(ctx)
+					return ctx.ReplyDupeShare(event.Id)
+				} else if strings.Contains(err.Error(), "ErrInvalidPoW") {
+					ctx.Logger.Warn("block rejected, incorred pow")
+					stats.StaleShares.Add(1)
+					sh.overall.InvalidShares.Add(1)
+					RecordInvalidShare(ctx)
+					return ctx.ReplyIncorrectPow(event.Id)
+				} else {
+					ctx.Logger.Warn("block rejected, unknown issue", zap.Error(err))
+					stats.InvalidShares.Add(1)
+					sh.overall.InvalidShares.Add(1)
+					RecordInvalidShare(ctx)
+					return ctx.ReplyBadShare(event.Id)
+				}
 			}
 		} else if recalculatedPowNum.Cmp(state.stratumDiff.targetValue) >= 0 {
 			if soloMining {
@@ -301,25 +316,16 @@ func (sh *shareHandler) HandleSubmit(ctx *gostratum.StratumContext, event gostra
 			} else {
 				ctx.Logger.Warn("weak share")
 			}
-			// fmt.Printf("Nonce: \t\t\t\t%d\n", submitInfo.nonceVal)
-			// fmt.Printf("Nonce Hex: \t\t\t%016x\n", submitInfo.nonceVal)
-			// fmt.Printf("Net Target (Hex): \t\t%064x\n", powState.Target.Bytes())
-			// fmt.Printf("Stratum Target (Hex): \t\t%064x\n", state.stratumDiff.targetValue.Bytes())
-			// fmt.Printf("Net Target: \t\t\t%s\n", powState.Target.String())
-			// fmt.Printf("Stratum Target: \t\t%s\n", state.stratumDiff.targetValue.String())
-			// fmt.Printf("Submitted PoW num: \t\t%d\n", submittedPowNum)
-			// fmt.Printf("Recalculated PoW num: \t\t%d\n", recalculatedPowNum)
-			// fmt.Printf("Lowdiff share, PoW Hash submitted %s, recalculated %s\n", submitInfo.powHash.String(), recalculatedPowHash.String())
 			stats.InvalidShares.Add(1)
 			sh.overall.InvalidShares.Add(1)
 			RecordWeakShare(ctx)
 			return ctx.ReplyLowDiffShare(event.Id)
 		}
 	} else {
-		// fmt.Printf("Incorrect proof of work hash submitted %s, recalculated %s\n", submitInfo.powHash.String(), recalculatedPowHash.String())
 		stats.InvalidShares.Add(1)
 		sh.overall.InvalidShares.Add(1)
-		return ctx.ReplyIncorrectPow(event.Id, recalculatedPowHash.String(), submitInfo.powHash.String())
+		RecordInvalidShare(ctx)
+		return ctx.ReplyIncorrectPow(event.Id)
 	}
 
 	stats.SharesFound.Add(1)
@@ -327,7 +333,10 @@ func (sh *shareHandler) HandleSubmit(ctx *gostratum.StratumContext, event gostra
 	stats.LastShare = time.Now()
 	sh.overall.SharesFound.Add(1)
 	RecordShareFound(ctx, state.stratumDiff.hashValue)
-
+	stats.BlocksFound.Add(1)
+	sh.overall.BlocksFound.Add(1)
+	RecordBlockFound(ctx, converted.Header.Nonce(), converted.Header.BlueScore(), consensushashing.BlockHash(converted).String())
+	ctx.ReplySuccess(event.Id)
 	return nil
 }
 
@@ -341,40 +350,8 @@ func (sh *shareHandler) submit(ctx *gostratum.StratumContext,
 	}
 	state := GetMiningState(ctx)
 	_, err := sh.hoosat.SubmitBlock(block, submitInfo.powHash.String())
-	blockhash := consensushashing.BlockHash(block)
-	// print after the submit to get it submitted faster
-	// ctx.Logger.Info(fmt.Sprintf("Submitted block with powhash: %s ", powHash))
-
-	if err != nil {
-		// :'(
-		state.RemoveJob(int(submitInfo.jobId))
-		if strings.Contains(err.Error(), "ErrDuplicateBlock") {
-			ctx.Logger.Warn("block rejected, stale")
-			sh.getCreateStats(ctx).StaleShares.Add(1)
-			sh.overall.StaleShares.Add(1)
-			RecordStaleShare(ctx)
-			return ctx.ReplyStaleShare(eventId)
-		} else {
-			ctx.Logger.Warn("block rejected, unknown issue (probably bad pow", zap.Error(err))
-			sh.getCreateStats(ctx).InvalidShares.Add(1)
-			sh.overall.InvalidShares.Add(1)
-			RecordInvalidShare(ctx)
-			return ctx.ReplyBadShare(eventId)
-		}
-	}
-
-	// :)
-	// ctx.Logger.Info(fmt.Sprintf("block accepted %s", blockhash))
-	stats := sh.getCreateStats(ctx)
 	state.RemoveJob(int(submitInfo.jobId))
-	ctx.ReplySuccess(eventId)
-	stats.BlocksFound.Add(1)
-	sh.overall.BlocksFound.Add(1)
-	RecordBlockFound(ctx, block.Header.Nonce(), block.Header.BlueScore(), blockhash.String())
-
-	// nil return allows HandleSubmit to record share (blocks are shares too!) and
-	// handle the response to the client
-	return nil
+	return err
 }
 
 func (sh *shareHandler) startStatsThread() error {
