@@ -83,17 +83,17 @@ func (htnApi *HtnApi) waitForSync(verbose bool) error {
 	if verbose {
 		htnApi.logger.Info("checking hoosat sync state")
 	}
-	// for {
-	// 	clientInfo, err := htnApi.hoosat.GetInfo()
-	// 	if err != nil {
-	// 		return errors.Wrapf(err, "error fetching server info from hoosat @ %s", htnApi.address)
-	// 	}
-	// 	if clientInfo.IsSynced {
-	// 		break
-	// 	}
-	// 	htnApi.logger.Warn("HTN is not synced, waiting for sync before starting bridge")
-	// 	time.Sleep(5 * time.Second)
-	// }
+	for {
+		clientInfo, err := htnApi.hoosat.GetInfo()
+		if err != nil {
+			return errors.Wrapf(err, "error fetching server info from hoosat @ %s", htnApi.address)
+		}
+		if clientInfo.IsSynced {
+			break
+		}
+		htnApi.logger.Warn("HTN is not synced, waiting for sync before starting bridge")
+		time.Sleep(5 * time.Second)
+	}
 	if verbose {
 		htnApi.logger.Info("HTN synced, starting server")
 	}
