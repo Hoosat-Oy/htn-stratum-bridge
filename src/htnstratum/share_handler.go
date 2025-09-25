@@ -221,6 +221,10 @@ func (sh *shareHandler) HandleSubmit(ctx *gostratum.StratumContext, event gostra
 	state := GetMiningState(ctx)
 	submitInfo, err := validateSubmit(ctx, event)
 	if err != nil {
+		if err.Error() == "job does not exist. stale?" {
+			RecordStaleShare(ctx)
+			return ctx.ReplyStaleShare(event.Id)
+		}
 		return ctx.ReplyIncorrectData(event.Id)
 	}
 
