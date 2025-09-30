@@ -282,6 +282,10 @@ func (sh *shareHandler) HandleSubmit(ctx *gostratum.StratumContext, event gostra
 	}
 	mutableHeader := converted.Header.ToMutable()
 	mutableHeader.SetNonce(submitInfo.nonceVal)
+
+	immutableHeader := mutableHeader.ToImmutable()
+	converted.Header = immutableHeader
+
 	powState := pow.NewState(mutableHeader)
 	// fmt.Printf("Block version: %d\n", powState.BlockVersion)
 	// fmt.Printf("Block prevHeader: %s\n", powState.PrevHeader.String())
@@ -332,6 +336,7 @@ func (sh *shareHandler) HandleSubmit(ctx *gostratum.StratumContext, event gostra
 		return ctx.ReplyIncorrectPow(event.Id)
 	}
 
+	blockHash := consensushashing.BlockHash(converted).String()
 	stats.SharesFound.Add(1)
 	stats.SharesDiff.Add(state.stratumDiff.hashValue)
 	stats.LastShare = time.Now()
@@ -339,8 +344,9 @@ func (sh *shareHandler) HandleSubmit(ctx *gostratum.StratumContext, event gostra
 	RecordShareFound(ctx, state.stratumDiff.hashValue)
 	stats.BlocksFound.Add(1)
 	sh.overall.BlocksFound.Add(1)
-	RecordBlockFound(ctx, converted.Header.Nonce(), converted.Header.BlueScore(), consensushashing.BlockHash(converted).String())
-	ctx.ReplySuccess(event.Id)
+	RecordBlockFound(ctx, converted.Header.Nonce(), converted.Header.BlueScore(), blockHash)
+	// ctx.ReplySuccess(event.Id)
+	return ctx.ReplySuccessWithBlockInfo(event.Id, true, blockHash)
 	return nil
 }
 

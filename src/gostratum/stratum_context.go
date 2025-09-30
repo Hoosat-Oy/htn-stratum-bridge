@@ -137,6 +137,26 @@ func (sc *StratumContext) ReplySuccess(id any) error {
 	})
 }
 
+// New: success with optional block info.
+// If isBlock is true, both is_block and block_hash will be included.
+// If isBlock is false, we omit both (so legacy miners see only id/result/error).
+func (sc *StratumContext) ReplySuccessWithBlockInfo(id any, isBlock bool, blockHash string) error {
+	var ib *bool
+	var bh string
+	if isBlock {
+		ib = &isBlock
+		bh = blockHash
+	}
+	return sc.Reply(JsonRpcResponse{
+		Id:        id,
+		Result:    true,
+		Error:     nil,
+		IsBlock:   ib,
+		BlockHash: bh,
+	})
+}
+
+
 func (sc *StratumContext) ReplyStaleShare(id any) error {
 	return sc.Reply(JsonRpcResponse{
 		Id:     id,
