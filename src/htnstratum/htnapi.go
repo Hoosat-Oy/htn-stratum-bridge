@@ -3,6 +3,8 @@ package htnstratum
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/Hoosat-Oy/HTND/app/appmessage"
@@ -131,17 +133,31 @@ func (htnApi *HtnApi) startBlockTemplateListener(ctx context.Context, blockReady
 	}
 }
 
+func sanitizeWorkerID(s string) string {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return s
+	}
+	s = strings.ReplaceAll(s, " ", "_")
+	re := regexp.MustCompile(`[^a-zA-Z0-9._-]`)
+	s = re.ReplaceAllString(s, "")
+	if len(s) > 32 {
+		s = s[:32]
+	}
+	return s
+}
+
 func (htnApi *HtnApi) GetBlockTemplate(client *gostratum.StratumContext, poll int64, vote int64) (*appmessage.GetBlockTemplateResponseMessage, error) {
 	if poll != 0 && vote != 0 {
 		template, err := htnApi.hoosat.GetBlockTemplate(client.WalletAddr,
-			fmt.Sprintf(`'%s' via htn-stratum-bridge_%s as worker %s poll %d vote %d `, client.RemoteApp, version, client.WorkerName, poll, vote))
+			fmt.Sprintf(`'%s' via htn-stratum-bridge_%s as worker %s poll %d vote %d `, client.RemoteApp, version, sanitizeWorkerID(client.WorkerName), poll, vote))
 		if err != nil {
 			return nil, errors.Wrap(err, "failed fetching new block template from hoosat")
 		}
 		return template, nil
 	} else {
 		template, err := htnApi.hoosat.GetBlockTemplate(client.WalletAddr,
-			fmt.Sprintf(`'%s' via htn-stratum-bridge_%s as worker %s`, client.RemoteApp, version, client.WorkerName))
+			fmt.Sprintf(`'%s' via htn-stratum-bridge_%s as worker %s`, client.RemoteApp, version, sanitizeWorkerID(client.WorkerName)))
 		if err != nil {
 			return nil, errors.Wrap(err, "failed fetching new block template from hoosat")
 		}
