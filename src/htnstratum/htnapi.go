@@ -131,12 +131,21 @@ func (htnApi *HtnApi) startBlockTemplateListener(ctx context.Context, blockReady
 	}
 }
 
-func (htnApi *HtnApi) GetBlockTemplate(
-	client *gostratum.StratumContext) (*appmessage.GetBlockTemplateResponseMessage, error) {
-	template, err := htnApi.hoosat.GetBlockTemplate(client.WalletAddr,
-		fmt.Sprintf(`'%s' via htn-stratum-bridge_%s`, client.RemoteApp, version))
-	if err != nil {
-		return nil, errors.Wrap(err, "failed fetching new block template from hoosat")
+func (htnApi *HtnApi) GetBlockTemplate(client *gostratum.StratumContext, poll int64, vote int64) (*appmessage.GetBlockTemplateResponseMessage, error) {
+	if poll != 0 && vote != 0 {
+		template, err := htnApi.hoosat.GetBlockTemplate(client.WalletAddr,
+			fmt.Sprintf(`'%s' via htn-stratum-bridge_%s as worker %s poll %d vote %d `, client.RemoteApp, version, client.WorkerName, poll, vote))
+		if err != nil {
+			return nil, errors.Wrap(err, "failed fetching new block template from hoosat")
+		}
+		return template, nil
+	} else {
+		template, err := htnApi.hoosat.GetBlockTemplate(client.WalletAddr,
+			fmt.Sprintf(`'%s' via htn-stratum-bridge_%s as worker %s`, client.RemoteApp, version, client.WorkerName))
+		if err != nil {
+			return nil, errors.Wrap(err, "failed fetching new block template from hoosat")
+		}
+		return template, nil
 	}
-	return template, nil
+
 }

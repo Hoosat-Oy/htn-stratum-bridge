@@ -83,7 +83,7 @@ func (c *clientListener) OnDisconnect(ctx *gostratum.StratumContext) {
 	RecordDisconnect(ctx)
 }
 
-func (c *clientListener) NewBlockAvailable(htnApi *HtnApi, soloMining bool) {
+func (c *clientListener) NewBlockAvailable(htnApi *HtnApi, soloMining bool, poll int64, vote int64) {
 	c.clientLock.Lock()
 	addresses := make([]string, 0, len(c.clients))
 	for _, cl := range c.clients {
@@ -101,7 +101,7 @@ func (c *clientListener) NewBlockAvailable(htnApi *HtnApi, soloMining bool) {
 				}
 				return
 			}
-			template, err := htnApi.GetBlockTemplate(client)
+			template, err := htnApi.GetBlockTemplate(client, poll, vote)
 			if err != nil {
 				if strings.Contains(err.Error(), "Could not decode address") {
 					RecordWorkerError(client.WalletAddr, ErrInvalidAddressFmt)

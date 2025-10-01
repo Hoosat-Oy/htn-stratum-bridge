@@ -14,7 +14,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-const version = "v1.3.3"
+const version = "v1.4.0"
 const minBlockWaitTime = 200 * time.Millisecond
 
 type BridgeConfig struct {
@@ -32,6 +32,8 @@ type BridgeConfig struct {
 	VarDiffStats      bool          `yaml:"var_diff_stats"`
 	ExtranonceSize    uint          `yaml:"extranonce_size"`
 	MineWhenNotSynced bool          `yaml:"mine_when_not_synced"`
+	Poll              int64         `yaml:"poll"`
+	Vote              int64         `yaml:"vote"`
 }
 
 func configureZap(cfg BridgeConfig) (*zap.SugaredLogger, func()) {
@@ -113,7 +115,7 @@ func ListenAndServe(cfg BridgeConfig) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	htnApi.Start(ctx, cfg, func() {
-		clientHandler.NewBlockAvailable(htnApi, cfg.SoloMining)
+		clientHandler.NewBlockAvailable(htnApi, cfg.SoloMining, cfg.Poll, cfg.Vote)
 	})
 
 	if cfg.VarDiff || cfg.SoloMining {

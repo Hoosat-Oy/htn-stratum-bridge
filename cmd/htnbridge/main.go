@@ -50,6 +50,8 @@ func main() {
 	flag.BoolVar(&cfg.UseLogFile, "log", cfg.UseLogFile, "if true will output errors to log file")
 	flag.StringVar(&cfg.HealthCheckPort, "hcp", cfg.HealthCheckPort, "(rarely used) if defined will expose a health check on /readyz")
 	flag.BoolVar(&cfg.MineWhenNotSynced, "minewhennotsynced", cfg.MineWhenNotSynced, "mine when not synced")
+	flag.Int64Var(&cfg.Poll, "poll", cfg.Poll, "Poll id for voting on blocks")
+	flag.Int64Var(&cfg.Vote, "vote", cfg.Vote, "Vote id of the poll for voting on blocks")
 	flag.Parse()
 
 	if cfg.MinShareDiff == 0 {
@@ -75,6 +77,8 @@ func main() {
 	log.Printf("extranonce size:\t\t%d", cfg.ExtranonceSize)
 	log.Printf("health check:\t\t\t%s", cfg.HealthCheckPort)
 	log.Printf("Mine when not synced:\t%t", cfg.MineWhenNotSynced)
+	log.Printf("Poll id:\t\t\t%.0f", cfg.Poll)
+	log.Printf("Vote id:\t\t\t%.0f", cfg.Vote)
 	log.Println("----------------------------------")
 
 	if err := htnstratum.ListenAndServe(cfg); err != nil {
