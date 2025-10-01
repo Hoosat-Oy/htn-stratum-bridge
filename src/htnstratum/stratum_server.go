@@ -14,7 +14,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-const version = "v1.4.0"
+const version = "v1.4.1"
 const minBlockWaitTime = 200 * time.Millisecond
 
 type BridgeConfig struct {
@@ -81,6 +81,9 @@ func ListenAndServe(cfg BridgeConfig) error {
 		http.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		})
+
+		registerMinerRewardsHandlers(htnApi) // <- New Rewards handler
+
 		go http.ListenAndServe(cfg.HealthCheckPort, nil)
 	}
 
