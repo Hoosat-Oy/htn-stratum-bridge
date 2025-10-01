@@ -153,15 +153,23 @@ func (sc *StratumContext) ReplyDupeShare(id any) error {
 	})
 }
 
+func (sc *StratumContext) ReplyIncorrectData(id any) error {
+	return sc.Reply(JsonRpcResponse{
+		Id:     id,
+		Result: nil,
+		Error:  []any{20, "Incorrect submission data.", nil},
+	})
+}
+
 func (sc *StratumContext) ReplyBadShare(id any) error {
 	return sc.Reply(JsonRpcResponse{
 		Id:     id,
 		Result: nil,
-		Error:  []any{20, "Unknown problem", nil},
+		Error:  []any{20, "Bad share for unknown reason.", nil},
 	})
 }
 
-func (sc *StratumContext) ReplyIncorrectPow(id any, recalculated string, submitted string) error {
+func (sc *StratumContext) ReplyIncorrectPow(id any) error {
 	return sc.Reply(JsonRpcResponse{
 		Id:     id,
 		Result: nil,
