@@ -14,8 +14,8 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-const version = "v1.4.1"
-const minBlockWaitTime = 200 * time.Millisecond
+const version = "v1.5.0"
+const minBlockWaitTime = 100 * time.Millisecond
 
 type BridgeConfig struct {
 	StratumPort       string        `yaml:"stratum_port"`

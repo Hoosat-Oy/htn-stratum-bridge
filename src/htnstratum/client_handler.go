@@ -140,13 +140,29 @@ func (c *clientListener) NewBlockAvailable(htnApi *HtnApi, soloMining bool, poll
 				varDiff = c.shareHandler.getClientVardiff(client)
 			}
 
-			if varDiff == 0 {
-				varDiff = state.stratumDiff.diffValue
+			// Guard against race where stratumDiff isn't initialized yet
+			currentDiff := 0.0
+			if state.stratumDiff != nil {
+				currentDiff = state.stratumDiff.diffValue
 			}
-			if varDiff != state.stratumDiff.diffValue {
+
+			if varDiff == 0 {
+				// If vardiff not computed, fall back to current or default
+				if state.stratumDiff == nil {
+					state.stratumDiff = newHoosatDiff()
+					state.stratumDiff.setDiffValue(c.minShareDiff)
+					currentDiff = state.stratumDiff.diffValue
+				}
+				varDiff = currentDiff
+			}
+
+			if state.stratumDiff == nil || varDiff != currentDiff {
 				// send updated vardiff
+				if state.stratumDiff == nil {
+					state.stratumDiff = newHoosatDiff()
+				}
 				if !soloMining {
-					client.Logger.Info(fmt.Sprintf("changing diff from %.10f to %.10f", state.stratumDiff.diffValue, varDiff))
+					client.Logger.Info(fmt.Sprintf("changing diff from %.10f to %.10f", currentDiff, varDiff))
 				}
 				state.stratumDiff.setDiffValue(varDiff)
 				sendClientDiff(client, state)

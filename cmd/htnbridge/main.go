@@ -58,7 +58,7 @@ func main() {
 		cfg.MinShareDiff = 4
 	}
 	if cfg.BlockWaitTime == 0 {
-		cfg.BlockWaitTime = 200 * time.Millisecond // this should never happen due to HTN 200ms block times
+		cfg.BlockWaitTime = 100 * time.Millisecond // this should never happen due to HTN 200ms block times
 	}
 
 	log.Println("----------------------------------")
@@ -77,8 +77,8 @@ func main() {
 	log.Printf("extranonce size:\t\t%d", cfg.ExtranonceSize)
 	log.Printf("health check:\t\t\t%s", cfg.HealthCheckPort)
 	log.Printf("Mine when not synced:\t%t", cfg.MineWhenNotSynced)
-	log.Printf("Poll id:\t\t\t%.0f", cfg.Poll)
-	log.Printf("Vote id:\t\t\t%.0f", cfg.Vote)
+	log.Printf("Poll id:\t\t\t%d", cfg.Poll)
+	log.Printf("Vote id:\t\t\t%d", cfg.Vote)
 	log.Println("----------------------------------")
 
 	if err := htnstratum.ListenAndServe(cfg); err != nil {

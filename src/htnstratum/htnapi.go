@@ -117,7 +117,7 @@ func (htnApi *HtnApi) startBlockTemplateListener(ctx context.Context, blockReady
 			htnApi.logger.Error("error checking hoosat sync state, attempting reconnect: ", err)
 			if err := htnApi.reconnect(); err != nil {
 				htnApi.logger.Error("error reconnecting to hoosat, waiting before retry: ", err)
-				time.Sleep(5 * time.Second)
+				time.Sleep(30 * time.Second)
 			}
 		}
 		select {
