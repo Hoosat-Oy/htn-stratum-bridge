@@ -113,13 +113,13 @@ func (htnApi *HtnApi) startBlockTemplateListener(ctx context.Context, blockReady
 
 	ticker := time.NewTicker(htnApi.blockWaitTime)
 	for {
-		if err := htnApi.waitForSync(false); err != nil {
-			htnApi.logger.Error("error checking hoosat sync state, attempting reconnect: ", err)
-			if err := htnApi.reconnect(); err != nil {
-				htnApi.logger.Error("error reconnecting to hoosat, waiting before retry: ", err)
-				time.Sleep(30 * time.Second)
-			}
-		}
+		// if err := htnApi.waitForSync(false); err != nil {
+		// 	htnApi.logger.Error("error checking hoosat sync state, attempting reconnect: ", err)
+		// 	if err := htnApi.reconnect(); err != nil {
+		// 		htnApi.logger.Error("error reconnecting to hoosat, waiting before retry: ", err)
+		// 		time.Sleep(30 * time.Second)
+		// 	}
+		// }
 		select {
 		case <-ctx.Done():
 			htnApi.logger.Warn("context cancelled, stopping block update listener")
